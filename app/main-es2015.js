@@ -182,7 +182,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const apiUrl = 'http://localhost:5000/api/v0/admin/';
+const apiUrl = 'http://192.168.137.233:5000/api/v0/admin/';
 let APIService = class APIService {
     constructor(http) {
         this.http = http;
