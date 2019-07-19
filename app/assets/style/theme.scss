@@ -1,0 +1,10 @@
+@import './variables';
+
+@include angular-material-theme($theme);
+
+.title-header {
+    color: white;
+    background-color: mat-color(map-get($theme, primary));
+    height:150px;
+}
+
