@@ -1,0 +1,20 @@
+{
+  "name": "fab-machine-manager",
+  "version": "1.0.0",
+  "description": "FABLAB machine manager API and web admin app for nodejs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Youlixx/fab-machine-manager.git"
+  },
+  "author": "Youlixx",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Youlixx/fab-machine-manager/issues"
+  },
+  "homepage": "https://github.com/Youlixx/fab-machine-manager#readme"
+}
