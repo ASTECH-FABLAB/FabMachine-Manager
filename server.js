@@ -193,7 +193,7 @@ function invalidResponse(res, message) {
  */
 app.get('/*', (req, res) => {
     res.sendFile(path.join(__dirname));
-});
+})
 
 /**
  * GET handler for the machine access API (shouldn't be called)
@@ -827,4 +827,32 @@ app.post('/api/v0/admin/monitoring/delete', (req, res) => {
 	} else {
 		invalidResponse(res, API_ADMIN_INVALID_TOKEN);
 	}
+});
+
+/**
+ * GET handler for the monitoring route
+ */
+app.get('/monitoring', function(req, res) {
+	res.redirect("/");
+});
+
+/**
+ * GET handler for the users route
+ */
+app.get('/users', function(req, res) {
+	res.redirect("/");
+});
+
+/**
+ * GET handler for the machines route
+ */
+app.get('/machines', function(req, res) {
+	res.redirect("/");
+});
+
+/**
+ * GET handler for the user route
+ */
+app.get('/user/*', function(req, res) {
+	res.redirect("/");
 });
