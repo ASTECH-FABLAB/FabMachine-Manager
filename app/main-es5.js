@@ -179,13 +179,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
 /* harmony import */ var _angular_common_http__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/common/http */ "./node_modules/@angular/common/fesm5/http.js");
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
 
 
 
-var apiUrl = 'http://192.168.137.233:5000/api/v0/admin/';
+
+var apiUrl = '/api/v0/admin/';
 var APIService = /** @class */ (function () {
-    function APIService(http) {
+    function APIService(http, router) {
         this.http = http;
+        this.router = router;
     }
     APIService.prototype.login = function (password) {
         return this.http.post(apiUrl + 'login', { password: password });
@@ -249,7 +252,8 @@ var APIService = /** @class */ (function () {
     APIService.API_ADMIN_MYSQL_ERROR_UPDATE = 'ERROR_UPDATE';
     APIService.API_ADMIN_SUCCESS = 'SUCCESS';
     APIService.ctorParameters = function () { return [
-        { type: _angular_common_http__WEBPACK_IMPORTED_MODULE_2__["HttpClient"] }
+        { type: _angular_common_http__WEBPACK_IMPORTED_MODULE_2__["HttpClient"] },
+        { type: _angular_router__WEBPACK_IMPORTED_MODULE_3__["Router"] }
     ]; };
     APIService = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
         Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"])()
