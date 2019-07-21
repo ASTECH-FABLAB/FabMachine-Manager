@@ -60,11 +60,13 @@ const PASSWORD = 'astech';
 // Constants variables used for the ESP communication
 const API_KEY = 'id1sYelNJkCeiGZOJHY7dY91Lq6JPLCQ';
 
-const API_ACCESS_INVALID_REQUEST_TYPE = '0';
-const API_ACCESS_INVALID_REQUEST_PARAMETERS = '1';
-const API_ACCESS_INVALID_API_KEY = '2';
-const API_ACCESS_UNAUTHORIZED_ACCESS = '3';
-const API_ACCESS_AUTHORIZED_ACCESS = '4';
+const API_ACCESS_ERROR = '0';
+const API_ACCESS_INVALID_REQUEST_TYPE = '1';
+const API_ACCESS_INVALID_REQUEST_PARAMETERS = '2';
+const API_ACCESS_INVALID_API_KEY = '3';
+const API_ACCESS_MACHINE_BROKEN = '4';
+const API_ACCESS_UNAUTHORIZED_ACCESS = '5';
+const API_ACCESS_AUTHORIZED_ACCESS = '6';
 
 const API_STOP_INVALID_REQUEST_TYPE = '0';
 const API_STOP_INVALID_REQUEST_PARAMETERS = '1';
@@ -81,6 +83,13 @@ const API_ADMIN_MYSQL_ERROR_DELETE = 'ERROR_DELETE';
 const API_ADMIN_MYSQL_ERROR_UPDATE = 'ERROR_UPDATE';
 
 const API_ADMIN_SUCCESS = 'SUCCESS';
+
+// Constants variables used for the monitoring messages
+const API_ADMIN_MONITORING_STOP = '1';
+const API_ADMIN_MONITORING_TRY_RESTRICTED = '2';
+const API_ADMIN_MONITORING_TRY_UNAUTHORIZED = '3';
+const API_ADMIN_MONITORING_START_TEMPORARILY = '4';
+const API_ADMIN_MONITORING_START_PERMANENT = '5';
 
 // The local server token randomly generated on startup
 let TOKEN = '';
@@ -193,7 +202,7 @@ function invalidResponse(res, message) {
  */
 app.get('/*', (req, res) => {
     res.sendFile(path.join(__dirname));
-})
+});
 
 /**
  * GET handler for the machine access API (shouldn't be called)
@@ -217,47 +226,55 @@ app.post('/api/v0/machine/access', (req, res) => {
 
 	if (apiKey && rfid && machine) {
 		if (apiKey === API_KEY) {
-			CONN.query('SELECT UL.level, U.id FROM (users AS U INNER JOIN rfids AS RFID ON U.id = RFID.id_user) INNER JOIN user_levels AS UL ON UL.id_user = U.id WHERE UL.id_machine=? AND RFID.rfid=? LIMIT 1;', [machine, rfid], (err, result) => {
-				if (err) throw err;
-
-				let date = datetime();
-
-				if (result.length != 0) {
-					let level = result[0].level;
-
-					if (level == 1) {
-						let user = result[0].id;
-
-						CONN.query('UPDATE user_levels SET level=0 WHERE id_machine=? AND id_user=?;', [machine, user], (err) => {
-							if (err) throw err;
-						});
-					}
-
-					if (level == 0) {
-						res.status(200).send(API_ACCESS_UNAUTHORIZED_ACCESS);
-
-						let content = 'Accès refusé (pas d\'autorisation admin)';
-
-						CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, content, date], (err) => {
-							if (err) throw err;
-						});
-					} else {
-						res.status(200).send(API_ACCESS_AUTHORIZED_ACCESS);
-
-						let content = 'Démarrage de la machine (' + (level == 2 ? 'utilisateur autonome' : 'autorisé par un admin') + ')';
-
-						CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, content, date], (err) => {
-							if (err) throw err;
-						});
-					}
+			CONN.query('SELECT broken FROM machines WHERE id=? LIMIT 1', [machine], (err, result) => {
+				if (err) {
+					res.status(200).send(API_ACCESS_ERROR);
 				} else {
-					res.status(200).send(API_ACCESS_UNAUTHORIZED_ACCESS);
+					if (result.length == 0) {
+						res.status(200).send(API_ACCESS_ERROR);
+					} else {
+						if (result[0].broken == 0) {
+							CONN.query('SELECT UL.level, U.id FROM (users AS U INNER JOIN rfids AS RFID ON U.id = RFID.id_user) INNER JOIN user_levels AS UL ON UL.id_user = U.id WHERE UL.id_machine=? AND RFID.rfid=? LIMIT 1;', [machine, rfid], (err, result) => {
+								if (err) {
+									res.status(200).send(API_ACCESS_ERROR);
+								} else {
+									let date = datetime();
 
-					let content = 'Accès refusé (interdiction)';
+									if (result.length != 0) {
+										let level = result[0].level;
 
-					CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, content, date], (err) => {
-						if (err) throw err;
-					});
+										if (level == 0) {
+											res.status(200).send(API_ACCESS_UNAUTHORIZED_ACCESS);
+
+											CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_UNAUTHORIZED, date], (err) => { });
+										} else if (level == 1) {
+											let user = result[0].id;
+
+											res.status(200).send(API_ACCESS_AUTHORIZED_ACCESS);
+
+											CONN.query('UPDATE user_levels SET level=0 WHERE id_machine=? AND id_user=?;', [machine, user], (err) => {
+												CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_START_TEMPORARILY, date], (err) => {
+													CONN.query('UPDATE machines SET running=1 WHERE id=?;'[machine], (err) => { });
+												});
+											});
+										} else {
+											res.status(200).send(API_ACCESS_AUTHORIZED_ACCESS);
+
+											CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_START_PERMANENT, date], (err) => {
+												CONN.query('UPDATE machines SET running=1 WHERE id=?;'[machine], (err) => { });
+											});
+										}
+									} else {
+										res.status(200).send(API_ACCESS_UNAUTHORIZED_ACCESS);
+
+										CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_RESTRICTED, date], (err) => { });
+									}
+								}
+							});
+						} else {
+							res.status(200).send(API_ACCESS_MACHINE_BROKEN);
+						}
+					}
 				}
 			});
 		} else {
@@ -291,10 +308,9 @@ app.post('/api/v0/machine/stop', (req, res) => {
 	if (apiKey && rfid && machine) {
 		if (apiKey === API_KEY) {
 			let date = datetime();
-			let content = 'Arrêt de la machine';
 
-			CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, content, date], (err) => {
-				if (err) throw err;
+			CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_STOP, date], (err) => {
+				CONN.query('UPDATE machines SET running=0 WHERE id=?;'[machine], (err) => { });
 			});
 
 			res.status(200).send(API_STOP_DONE);
@@ -490,7 +506,7 @@ app.post('/api/v0/admin/users/machine/unallowed', (req, res) => {
 	let idUser = req.body.id_user;
 
 	if (token === TOKEN) {
-		CONN.query('SELECT * FROM machines WHERE id NOT IN (SELECT id_machine FROM user_levels WHERE id_user=?);', [idUser], (err, result) => {
+		CONN.query('SELECT id, name FROM machines WHERE id NOT IN (SELECT id_machine FROM user_levels WHERE id_user=?);', [idUser], (err, result) => {
 			if (err) {
 				validResponse(res, API_ADMIN_MYSQL_ERROR_SELECT);
 			} else {
@@ -633,7 +649,7 @@ app.post('/api/v0/admin/users/rfid/delete', (req, res) => {
 	let token = req.body.token;
 
 	let rfid = req.body.rfid;
-	
+
 	if (token === TOKEN) {
 		CONN.query('DELETE FROM monitoring WHERE rfid=?;', [rfid], (err) => {
 			if (err) {
@@ -725,7 +741,7 @@ app.post('/api/v0/admin/machines/add', (req, res) => {
  * @inputs token, id_machine, default_level
  * @outputs none
  */
-app.post('/api/v0/admin/machines/set', (req, res) => {
+app.post('/api/v0/admin/machines/set/level', (req, res) => {
 	let token = req.body.token;
 
 	let idMachine = req.body.id_machine;
@@ -733,6 +749,32 @@ app.post('/api/v0/admin/machines/set', (req, res) => {
 
 	if (token === TOKEN) {
 		CONN.query('UPDATE machines SET default_level=? WHERE id=?;', [defaultLevel, idMachine], (err) => {
+			if (err) {
+				validResponse(res, API_ADMIN_MYSQL_ERROR_UPDATE);
+			} else {
+				validResponse(res, API_ADMIN_SUCCESS);
+			}
+		});
+	} else {
+		invalidResponse(res, API_ADMIN_INVALID_TOKEN);
+	}
+});
+
+/**
+ * POST handler for the admin machine broken setter API
+ * Sets the current machine broken state
+ * 
+ * @inputs token, id_machine, broken
+ * @outputs none
+ */
+app.post('/api/v0/admin/machines/set/broken', (req, res) => {
+	let token = req.body.token;
+
+	let idMachine = req.body.id_machine;
+	let broken = req.body.broken;
+
+	if (token === TOKEN) {
+		CONN.query('UPDATE machines SET broken=? WHERE id=?;', [broken, idMachine], (err) => {
 			if (err) {
 				validResponse(res, API_ADMIN_MYSQL_ERROR_UPDATE);
 			} else {
