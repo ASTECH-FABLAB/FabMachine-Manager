@@ -14,6 +14,8 @@ CREATE TABLE machines
     id INT(11) NOT NULL AUTO_INCREMENT,
     name VARCHAR(45),
     default_level INT(11),
+	running TINYINT(1) DEFAULT '0',
+	broken TINYINT(1) DEFAULT '0',
     PRIMARY KEY (id)
 );
 
@@ -38,7 +40,7 @@ CREATE TABLE monitoring
     id INT(11) NOT NULL AUTO_INCREMENT,
     id_machine INT(11) NOT NULL,
     rfid INT(11) NOT NULL,
-    content TEXT,
+    content TINYINT(4) DEFAULT '0',
     date DATETIME,
     PRIMARY KEY (id),
 	FOREIGN KEY (id_machine) REFERENCES machines(id),
