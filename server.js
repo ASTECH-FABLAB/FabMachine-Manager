@@ -698,7 +698,9 @@ app.post('/api/v0/admin/users/rfid/set', (req, res) => {
 	let idUser = req.body.id_user;
 
 	if (token === TOKEN) {
-		ID_USER = id_user;
+		ID_USER = idUser;
+		
+		validResponse(res, API_ADMIN_SUCCESS);
 	} else {
 		invalidResponse(res, API_ADMIN_INVALID_TOKEN);
 	}
