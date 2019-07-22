@@ -73,6 +73,12 @@ const API_STOP_INVALID_REQUEST_PARAMETERS = '1';
 const API_STOP_INVALID_API_KEY = '2';
 const API_STOP_DONE = '3';
 
+const API_ADD_INVALID_REQUEST_TYPE = '0';
+const API_ADD_INVALID_REQUEST_PARAMETERS = '1';
+const API_ADD_INVALID_API_KEY = '2';
+const API_ADD_UNSET_USER = '3';
+const API_ADD_DONE = '4';
+
 // Constants variables used for the web interface
 const API_ADMIN_INVALID_PASSWORD = 'INVALID_PASSWORD';
 const API_ADMIN_INVALID_TOKEN = 'INVALID_TOKEN';
@@ -93,6 +99,9 @@ const API_ADMIN_MONITORING_START_PERMANENT = '5';
 
 // The local server token randomly generated on startup
 let TOKEN = '';
+
+// The local server add API user id
+let USER_ID = null;
 
 // The MySQL connection used for each database transaction
 let CONN = mysql.createConnection({
@@ -314,6 +323,44 @@ app.post('/api/v0/machine/stop', (req, res) => {
 			});
 
 			res.status(200).send(API_STOP_DONE);
+		} else {
+			res.status(200).send(API_STOP_INVALID_API_KEY);
+		}
+	} else {
+		res.status(200).send(API_STOP_INVALID_REQUEST_PARAMETERS);
+	}
+});
+
+/**
+ * GET handler for the machine add API (shouldn't be called)
+ */
+app.get('/api/v0/machine/ass', (req, res) => {
+	res.status(200).send(API_ADD_INVALID_REQUEST_TYPE);
+});
+
+/**
+ * POST handler for the machine add API.
+ * The code in the response corresponds to the request state
+ * 
+ * @input rfid
+ * @output the API code
+ */
+app.post('/api/v0/machine/add', (req, res) => {
+	let apiKey = req.body.api_key;
+
+	let rfid = req.body.rfid;
+
+	if (apiKey && rfid) {
+		if (apiKey === API_KEY) {
+			if (USER_ID) {
+				CONN.query('INSERT INTO rfids (rfid, id_user) VALUES (?, ?);', [rfid, ID_USER], (err) => { });
+				
+				USER_ID = null;
+				
+				res.status(200).send(API_ADD_DONE);
+			} else {
+				res.status(200).send(API_ADD_UNSET_USER);
+			}
 		} else {
 			res.status(200).send(API_STOP_INVALID_API_KEY);
 		}
@@ -633,6 +680,25 @@ app.post('/api/v0/admin/users/rfid/add', (req, res) => {
 				validResponse(res, API_ADMIN_SUCCESS);
 			}
 		});
+	} else {
+		invalidResponse(res, API_ADMIN_INVALID_TOKEN);
+	}
+});
+
+/**
+ * POST handler for the admin user rfid set API
+ * Adds a new RFID card to the specified user
+ * 
+ * @inputs token, id_user
+ * @outputs none
+ */
+app.post('/api/v0/admin/users/rfid/set', (req, res) => {
+	let token = req.body.token;
+
+	let idUser = req.body.id_user;
+
+	if (token === TOKEN) {
+		ID_USER = id_user;
 	} else {
 		invalidResponse(res, API_ADMIN_INVALID_TOKEN);
 	}
