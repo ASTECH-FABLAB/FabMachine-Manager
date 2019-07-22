@@ -210,7 +210,7 @@ function invalidResponse(res, message) {
  * GET handler for the main application
  */
 app.get('/*', (req, res) => {
-    res.sendFile(path.join(__dirname));
+	res.sendFile(path.join(__dirname));
 });
 
 /**
@@ -334,7 +334,7 @@ app.post('/api/v0/machine/stop', (req, res) => {
 /**
  * GET handler for the machine add API (shouldn't be called)
  */
-app.get('/api/v0/machine/ass', (req, res) => {
+app.get('/api/v0/machine/add', (req, res) => {
 	res.status(200).send(API_ADD_INVALID_REQUEST_TYPE);
 });
 
@@ -354,18 +354,18 @@ app.post('/api/v0/machine/add', (req, res) => {
 		if (apiKey === API_KEY) {
 			if (USER_ID) {
 				CONN.query('INSERT INTO rfids (rfid, id_user) VALUES (?, ?);', [rfid, ID_USER], (err) => { });
-				
+
 				USER_ID = null;
-				
+
 				res.status(200).send(API_ADD_DONE);
 			} else {
 				res.status(200).send(API_ADD_UNSET_USER);
 			}
 		} else {
-			res.status(200).send(API_STOP_INVALID_API_KEY);
+			res.status(200).send(API_ADD_INVALID_API_KEY);
 		}
 	} else {
-		res.status(200).send(API_STOP_INVALID_REQUEST_PARAMETERS);
+		res.status(200).send(API_ADD_INVALID_REQUEST_PARAMETERS);
 	}
 });
 
@@ -698,8 +698,8 @@ app.post('/api/v0/admin/users/rfid/set', (req, res) => {
 	let idUser = req.body.id_user;
 
 	if (token === TOKEN) {
-		ID_USER = idUser;
-		
+		USER_ID = idUser;
+
 		validResponse(res, API_ADMIN_SUCCESS);
 	} else {
 		invalidResponse(res, API_ADMIN_INVALID_TOKEN);
@@ -942,27 +942,27 @@ app.post('/api/v0/admin/monitoring/delete', (req, res) => {
 /**
  * GET handler for the monitoring route
  */
-app.get('/monitoring', function(req, res) {
+app.get('/monitoring', function (req, res) {
 	res.redirect("/");
 });
 
 /**
  * GET handler for the users route
  */
-app.get('/users', function(req, res) {
+app.get('/users', function (req, res) {
 	res.redirect("/");
 });
 
 /**
  * GET handler for the machines route
  */
-app.get('/machines', function(req, res) {
+app.get('/machines', function (req, res) {
 	res.redirect("/");
 });
 
 /**
  * GET handler for the user route
  */
-app.get('/user/*', function(req, res) {
+app.get('/user/*', function (req, res) {
 	res.redirect("/");
 });
