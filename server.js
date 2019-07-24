@@ -47,8 +47,6 @@
  * /api/v0/admin/monitoring/delete (token, id_entry) 
  */
 let express = require('express');
-let https = require('https');
-let fs = require('fs');
 let path = require('path');
 let crypto = require('crypto');
 let mysql = require('mysql');
@@ -129,10 +127,7 @@ app.use(function (req, res, next) {
 app.use(express.static(__dirname + '/app'));
 
 // Starting the server
-https.createServer({
-  key: fs.readFileSync('ssl/key.pem'),
-  cert: fs.readFileSync('ssl/cert.pem')
-}, app).listen(PORT, () => {
+app.listen(PORT, () => {
 	console.log('Server started on port ' + PORT);
 	console.log('Arduino secret API key ' + API_KEY);
 
