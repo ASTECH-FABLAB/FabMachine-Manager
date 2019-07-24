@@ -15,6 +15,7 @@
  * 
  * /api/v0/machine/access (api_key, rfid, id_machine)
  * /api/v0/machine/stop   (api_key, rfid, id_machine)
+ * /api/v0/machine/add    (api_key, rfid)
  * 
  * ***************************************************************************
  * # ADMIN API CALLS
@@ -34,6 +35,7 @@
  * 
  * /api/v0/admin/users/rfid/get    (token, id_user) => rfids
  * /api/v0/admin/users/rfid/add    (token, id_user, rfid)
+ * /api/v0/admin/users/rfid/set    (token, id_user)
  * /api/v0/admin/users/rfid/delete (token, rfid)
  * 
  * /api/v0/admin/machines/all    (token) => machines
@@ -65,8 +67,9 @@ const API_ACCESS_INVALID_REQUEST_TYPE = '1';
 const API_ACCESS_INVALID_REQUEST_PARAMETERS = '2';
 const API_ACCESS_INVALID_API_KEY = '3';
 const API_ACCESS_MACHINE_BROKEN = '4';
-const API_ACCESS_UNAUTHORIZED_ACCESS = '5';
-const API_ACCESS_AUTHORIZED_ACCESS = '6';
+const API_ACCESS_ACCOUNT_EXPIRED = '5';
+const API_ACCESS_UNAUTHORIZED_ACCESS = '6';
+const API_ACCESS_AUTHORIZED_ACCESS = '7';
 
 const API_STOP_INVALID_REQUEST_TYPE = '0';
 const API_STOP_INVALID_REQUEST_PARAMETERS = '1';
@@ -94,8 +97,9 @@ const API_ADMIN_SUCCESS = 'SUCCESS';
 const API_ADMIN_MONITORING_STOP = '1';
 const API_ADMIN_MONITORING_TRY_RESTRICTED = '2';
 const API_ADMIN_MONITORING_TRY_UNAUTHORIZED = '3';
-const API_ADMIN_MONITORING_START_TEMPORARILY = '4';
-const API_ADMIN_MONITORING_START_PERMANENT = '5';
+const API_ADMIN_MONITORING_TRY_EXPIRED = '4';
+const API_ADMIN_MONITORING_START_TEMPORARILY = '5';
+const API_ADMIN_MONITORING_START_PERMANENT = '6';
 
 // The local server token randomly generated on startup
 let TOKEN = '';
@@ -147,23 +151,23 @@ app.listen(PORT, () => {
  * @returns {string} the datetime
  */
 function datetime() {
-	var date = new Date();
+	let date = new Date();
 
-	var hour = date.getHours();
+	let hour = date.getHours();
 	hour = (hour < 10 ? '0' : '') + hour;
 
-	var min = date.getMinutes();
+	let min = date.getMinutes();
 	min = (min < 10 ? '0' : '') + min;
 
-	var sec = date.getSeconds();
+	let sec = date.getSeconds();
 	sec = (sec < 10 ? '0' : '') + sec;
 
-	var year = date.getFullYear();
+	let year = date.getFullYear();
 
-	var month = date.getMonth() + 1;
+	let month = date.getMonth() + 1;
 	month = (month < 10 ? '0' : '') + month;
 
-	var day = date.getDate();
+	let day = date.getDate();
 	day = (day < 10 ? '0' : '') + day;
 
 	return year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':' + sec;
@@ -243,40 +247,49 @@ app.post('/api/v0/machine/access', (req, res) => {
 						res.status(200).send(API_ACCESS_ERROR);
 					} else {
 						if (result[0].broken == 0) {
-							CONN.query('SELECT UL.level, U.id FROM (users AS U INNER JOIN rfids AS RFID ON U.id = RFID.id_user) INNER JOIN user_levels AS UL ON UL.id_user = U.id WHERE UL.id_machine=? AND RFID.rfid=? LIMIT 1;', [machine, rfid], (err, result) => {
+							CONN.query('SELECT UL.level, U.id, U.validity FROM (users AS U INNER JOIN rfids AS RFID ON U.id = RFID.id_user) INNER JOIN user_levels AS UL ON UL.id_user = U.id WHERE UL.id_machine=? AND RFID.rfid=? LIMIT 1;', [machine, rfid], (err, result) => {
 								if (err) {
 									res.status(200).send(API_ACCESS_ERROR);
 								} else {
-									let date = datetime();
+									let datetime = datetime();
 
 									if (result.length != 0) {
+										let date = new Date();
+
+										let validity = result[0].validity;
 										let level = result[0].level;
 
-										if (level == 0) {
-											res.status(200).send(API_ACCESS_UNAUTHORIZED_ACCESS);
+										if (Date.parse(validity) < date) {
+											if (level == 0) {
+												res.status(200).send(API_ACCESS_UNAUTHORIZED_ACCESS);
 
-											CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_UNAUTHORIZED, date], (err) => { });
-										} else if (level == 1) {
-											let user = result[0].id;
+												CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_UNAUTHORIZED, datetime], (err) => { });
+											} else if (level == 1) {
+												let user = result[0].id;
 
-											res.status(200).send(API_ACCESS_AUTHORIZED_ACCESS);
+												res.status(200).send(API_ACCESS_AUTHORIZED_ACCESS);
 
-											CONN.query('UPDATE user_levels SET level=0 WHERE id_machine=? AND id_user=?;', [machine, user], (err) => {
-												CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_START_TEMPORARILY, date], (err) => {
+												CONN.query('UPDATE user_levels SET level=0 WHERE id_machine=? AND id_user=?;', [machine, user], (err) => {
+													CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_START_TEMPORARILY, datetime], (err) => {
+														CONN.query('UPDATE machines SET running=1 WHERE id=?;'[machine], (err) => { });
+													});
+												});
+											} else {
+												res.status(200).send(API_ACCESS_AUTHORIZED_ACCESS);
+
+												CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_START_PERMANENT, datetime], (err) => {
 													CONN.query('UPDATE machines SET running=1 WHERE id=?;'[machine], (err) => { });
 												});
-											});
+											}
 										} else {
-											res.status(200).send(API_ACCESS_AUTHORIZED_ACCESS);
+											res.status(200).send(API_ACCESS_ACCOUNT_EXPIRED);
 
-											CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_START_PERMANENT, date], (err) => {
-												CONN.query('UPDATE machines SET running=1 WHERE id=?;'[machine], (err) => { });
-											});
+											CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_EXPIRED, datetime], (err) => { });
 										}
 									} else {
 										res.status(200).send(API_ACCESS_UNAUTHORIZED_ACCESS);
 
-										CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_RESTRICTED, date], (err) => { });
+										CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_RESTRICTED, datetime], (err) => { });
 									}
 								}
 							});
@@ -353,7 +366,7 @@ app.post('/api/v0/machine/add', (req, res) => {
 	if (apiKey && rfid) {
 		if (apiKey === API_KEY) {
 			if (USER_ID) {
-				CONN.query('INSERT INTO rfids (rfid, id_user) VALUES (?, ?);', [rfid, ID_USER], (err) => { });
+				CONN.query('INSERT INTO rfids (rfid, id_user) VALUES (?, ?);', [rfid, USER_ID], (err) => { });
 
 				USER_ID = null;
 
@@ -469,6 +482,32 @@ app.post('/api/v0/admin/users/add', (req, res) => {
 		});
 	} else {
 		invalidResponse(res);
+	}
+});
+
+/**
+ * POST handler for the admin user set API
+ * Modifies the account expiracy date
+ * 
+ * @inputs token, id_user, validity
+ * @outputs none
+ */
+app.post('/api/v0/admin/users/set', (req, res) => {
+	let token = req.body.token;
+
+	let idUser = req.body.id_user;
+	let validity = req.body.validity;
+
+	if (token === TOKEN) {
+		CONN.query('UPDATE machines SET validity=? WHERE id=?;', [validity, idUser], (err) => {
+			if (err) {
+				validResponse(res, API_ADMIN_MYSQL_ERROR_UPDATE);
+			} else {
+				validResponse(res, API_ADMIN_SUCCESS);
+			}
+		});
+	} else {
+		invalidResponse(res, API_ADMIN_INVALID_TOKEN);
 	}
 });
 
