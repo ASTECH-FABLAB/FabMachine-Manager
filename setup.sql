@@ -29,7 +29,7 @@ CREATE TABLE users
 
 CREATE TABLE rfids
 (
-    rfid INT(11) NOT NULL,
+    rfid INT(20) NOT NULL,
     id_user INT(11) NOT NULL,
     PRIMARY KEY (rfid),
     FOREIGN KEY (id_user) REFERENCES users(id)
