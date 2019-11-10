@@ -316,6 +316,7 @@ app.post('/api/v0/machine/stop', (req, res) => {
 
 	if (apiKey && rfid && machine) {
 		if (apiKey === API_KEY) {
+			let date = new Date();
 			
 			let hours = date.getHours();
 			hours = (hours < 10 ? '0' : '') + hours;
