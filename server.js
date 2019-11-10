@@ -149,7 +149,7 @@ app.listen(PORT, () => {
  * Returns the current server datetime with the SQL format
  * @returns {string} the datetime
  */
-function datetime() {
+function datetimes() {
 	let date = new Date();
 
 	let hour = date.getHours();
@@ -250,7 +250,7 @@ app.post('/api/v0/machine/access', (req, res) => {
 								if (err) {
 									res.status(200).send(API_ACCESS_ERROR);
 								} else {
-									let datetime = datetime();
+									let datetimes = datetimes();
 
 									if (result.length != 0) {
 										let level = result[0].level;
@@ -258,28 +258,28 @@ app.post('/api/v0/machine/access', (req, res) => {
 										if (level == 0) {
 											res.status(200).send(API_ACCESS_UNAUTHORIZED_ACCESS);
 
-											CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_UNAUTHORIZED, datetime], (err) => { });
+											CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_UNAUTHORIZED, datetimes], (err) => { });
 										} else if (level == 1) {
 											let user = result[0].id;
 
 											res.status(200).send(API_ACCESS_AUTHORIZED_ACCESS);
 
 											CONN.query('UPDATE user_levels SET level=0 WHERE id_machine=? AND id_user=?;', [machine, user], (err) => {
-												CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_START_TEMPORARILY, datetime], (err) => {
+												CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_START_TEMPORARILY, datetimes], (err) => {
 													CONN.query('UPDATE machines SET running=1 WHERE id=?;'[machine], (err) => { });
 												});
 											});
 										} else {
 											res.status(200).send(API_ACCESS_AUTHORIZED_ACCESS);
 
-											CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_START_PERMANENT, datetime], (err) => {
+											CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_START_PERMANENT, datetimes], (err) => {
 												CONN.query('UPDATE machines SET running=1 WHERE id=?;'[machine], (err) => { });
 											});
 										}
 									} else {
 										res.status(200).send(API_ACCESS_UNAUTHORIZED_ACCESS);
 
-										CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_RESTRICTED, datetime], (err) => { });
+										CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_TRY_RESTRICTED, datetimes], (err) => { });
 									}
 								}
 							});
@@ -319,7 +319,7 @@ app.post('/api/v0/machine/stop', (req, res) => {
 
 	if (apiKey && rfid && machine) {
 		if (apiKey === API_KEY) {
-			let date = datetime();
+			let date = datetimes();
 
 			CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_STOP, date], (err) => {
 				CONN.query('UPDATE machines SET running=0 WHERE id=?;'[machine], (err) => { });
