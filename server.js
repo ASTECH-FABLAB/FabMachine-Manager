@@ -225,7 +225,29 @@ app.post('/api/v0/machine/access', (req, res) => {
 								if (err) {
 									res.status(200).send(API_ACCESS_ERROR);
 								} else {
-									let datetimes = datetimes();
+									let date = new Date();
+
+									let hour = date.getHours();
+									hour = (hour < 10 ? '0' : '') + hour;
+
+									let min = date.getMinutes();
+									min = (min < 10 ? '0' : '') + min;
+
+									let sec = date.getSeconds();
+									sec = (sec < 10 ? '0' : '') + sec;
+
+									let year = date.getFullYear();
+
+									let month = date.getMonth() + 1;
+									month = (month < 10 ? '0' : '') + month;
+
+									let day = date.getDate();
+									day = (day < 10 ? '0' : '') + day;
+
+									let datetimes =  year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':' + sec;
+									
+
+									
 
 									if (result.length != 0) {
 										let level = result[0].level;
@@ -294,7 +316,26 @@ app.post('/api/v0/machine/stop', (req, res) => {
 
 	if (apiKey && rfid && machine) {
 		if (apiKey === API_KEY) {
-			let date = datetimes();
+			
+			let hours = date.getHours();
+			hours = (hours < 10 ? '0' : '') + hours;
+
+			let mins = date.getMinutes();
+			mins = (mins < 10 ? '0' : '') + mins;
+
+			let secs = date.getSeconds();
+			secs = (secs < 10 ? '0' : '') + secs;
+
+			let years = date.getFullYear();
+
+			let months = date.getMonth() + 1;
+			months = (months < 10 ? '0' : '') + months;
+
+			let days = date.getDate();
+			days = (days < 10 ? '0' : '') + days;
+
+			let date =  years + '-' + months + '-' + days + ' ' + hours + ':' + mins + ':' + secs;
+	
 
 			CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_STOP, date], (err) => {
 				CONN.query('UPDATE machines SET running=0 WHERE id=?;'[machine], (err) => { });
