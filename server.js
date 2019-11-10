@@ -145,32 +145,7 @@ app.listen(PORT, () => {
 	});
 });
 
-/**
- * Returns the current server datetime with the SQL format
- * @returns {string} the datetime
- */
-function datetimes() {
-	let date = new Date();
 
-	let hour = date.getHours();
-	hour = (hour < 10 ? '0' : '') + hour;
-
-	let min = date.getMinutes();
-	min = (min < 10 ? '0' : '') + min;
-
-	let sec = date.getSeconds();
-	sec = (sec < 10 ? '0' : '') + sec;
-
-	let year = date.getFullYear();
-
-	let month = date.getMonth() + 1;
-	month = (month < 10 ? '0' : '') + month;
-
-	let day = date.getDate();
-	day = (day < 10 ? '0' : '') + day;
-
-	return year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':' + sec;
-}
 
 /**
  * Returns a valid response
@@ -995,3 +970,31 @@ app.get('/machines', function (req, res) {
 app.get('/user/*', function (req, res) {
 	res.redirect("/");
 });
+
+
+/**
+ * Returns the current server datetime with the SQL format
+ * @returns {string} the datetime
+ */
+function datetimes() {
+	let date = new Date();
+
+	let hour = date.getHours();
+	hour = (hour < 10 ? '0' : '') + hour;
+
+	let min = date.getMinutes();
+	min = (min < 10 ? '0' : '') + min;
+
+	let sec = date.getSeconds();
+	sec = (sec < 10 ? '0' : '') + sec;
+
+	let year = date.getFullYear();
+
+	let month = date.getMonth() + 1;
+	month = (month < 10 ? '0' : '') + month;
+
+	let day = date.getDate();
+	day = (day < 10 ? '0' : '') + day;
+
+	return year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':' + sec;
+}
