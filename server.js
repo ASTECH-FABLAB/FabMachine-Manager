@@ -335,7 +335,7 @@ app.post('/api/v0/machine/stop', (req, res) => {
 			let days = date.getDate();
 			days = (days < 10 ? '0' : '') + days;
 
-			let date =  years + '-' + months + '-' + days + ' ' + hours + ':' + mins + ':' + secs;
+			date =  years + '-' + months + '-' + days + ' ' + hours + ':' + mins + ':' + secs;
 	
 
 			CONN.query('INSERT INTO monitoring (id_machine, rfid, content, date) VALUES (?, ?, ?, ?);', [machine, rfid, API_ADMIN_MONITORING_STOP, date], (err) => {
