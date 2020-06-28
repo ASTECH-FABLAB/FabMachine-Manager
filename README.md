@@ -1,4 +1,8 @@
-# Install
+# FabMachine Manager
+
+Simple prototype for the use of the machines in fablabs by RFID card.
+
+## Install
 
 Run the following command.
 
@@ -6,7 +10,7 @@ Run the following command.
 sh setup.sh
 ```
 
-# ESP API CALLS
+## ESP API CALLS
 
 The API key used by the ESPs should be set at line 63 in `server.js`
 
@@ -17,11 +21,13 @@ const API_KEY = 'api_key';
 
 Here are the API calls available for the ESPs.
 
+```
 /api/v0/machine/access (api_key, rfid, id_machine)
 /api/v0/machine/stop   (api_key, rfid, id_machine)
 /api/v0/machine/add    (api_key, rfid)
+```
 
-# ADMIN API CALLS
+## ADMIN API CALLS
 
 The admins log in using the password specified at line 60 in `server.js`
 
@@ -31,6 +37,7 @@ const PASSWORD = 'password';
 
 Here are the API calls available for the admin web interface.
 
+```
 /api/v0/admin/login (password) => token
 
 /api/v0/admin/users/all    (token) => users
@@ -54,7 +61,8 @@ Here are the API calls available for the admin web interface.
 /api/v0/admin/machines/delete (token, id_machine)
   
 /api/v0/admin/monitoring/all    (token) => monitoring_entries
-/api/v0/admin/monitoring/delete (token, id_entry) 
+/api/v0/admin/monitoring/delete (token, id_entry)
+``` 
 
 # License
 
